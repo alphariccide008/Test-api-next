@@ -1,0 +1,70 @@
+import connect from "@/lib/db";
+import User from "@/lib/modals/users";
+import { NextResponse } from "next/server";
+import { Types } from "mongoose";
+
+interface RouteParams {
+  params: { userId: string };
+}
+
+// PATCH /api/users/:userId
+export const PATCH = async (request: Request, { params }: RouteParams) => {
+  try {
+    const { userId } = params;
+    const { newUsername } = await request.json();
+
+    if (!newUsername?.trim()) {
+      return NextResponse.json({ error: "Missing newUsername" }, { status: 400 });
+    }
+
+    if (!Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+    }
+
+    await connect();
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username: newUsername },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "User updated successfully", updatedUser });
+  } catch (error: unknown) {
+    console.error("Failed to update user:", error);
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+  }
+};
+
+// DELETE /api/users/:userId
+export const DELETE = async (request: Request, { params }: RouteParams) => {
+  try {
+    const { userId } = params;
+
+    if (!Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+    }
+
+    await connect();
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "User deleted successfully", deletedUser });
+  } catch (error: unknown) {
+    console.error("Failed to delete user:", error);
+    return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
+  }
+};
+
+
+
+
+
